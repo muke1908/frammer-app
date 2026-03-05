@@ -1,0 +1,152 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  user-select: none;
+  position: relative;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  transform: none !important;
+}
+
+/* PRIMARY - For main actions (Export/Download) */
+.button--primary {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 4px rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.button--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(37, 99, 235, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.button--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* SECONDARY - For less important actions */
+.button--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--color-background);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.button--secondary:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--color-overlay);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* DANGER - For destructive actions */
+.button--danger {
+  background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 4px rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.button--danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(239, 68, 68, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.button--danger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+/* SIZES */
+.button--small {
+  padding: 6px 12px;
+  font-size: var(--text-sm);
+  gap: 6px;
+  min-height: 32px;
+}
+
+.button--medium {
+  padding: 8px 16px;
+  font-size: var(--text-base);
+  min-height: 40px;
+}
+
+.button--large {
+  padding: 10px 20px;
+  font-size: var(--text-base);
+  min-height: 44px;
+  font-weight: var(--font-semibold);
+  gap: 8px;
+}
+
+.button svg {
+  transition: transform var(--transition-base);
+  flex-shrink: 0;
+}
+
+.button:hover:not(:disabled) svg {
+  transform: translateY(-1px);
+}
+
+.export-button__spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

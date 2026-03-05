@@ -1,0 +1,113 @@
+.toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  align-items: flex-start;
+}
+
+.toggle__label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding-left: 2px;
+}
+
+.toggle__button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 32px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.toggle__button:hover {
+  border-color: var(--color-border-strong);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.toggle__button:active {
+  transform: scale(0.98);
+}
+
+.toggle__option {
+  position: relative;
+  z-index: 2;
+  padding: 4px 14px;
+  transition: color var(--transition-base);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.toggle__divider {
+  position: relative;
+  z-index: 2;
+  color: var(--color-border-strong);
+  font-weight: var(--font-normal);
+  opacity: 0.4;
+  margin: 0 -2px;
+  font-size: var(--text-xs);
+}
+
+.toggle__indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  bottom: 3px;
+  width: calc(50% - 3px);
+  background: var(--color-text);
+  border-radius: var(--radius-md);
+  transition: transform var(--spring-smooth);
+  z-index: 1;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.toggle__button:has(.toggle__indicator[style*="translateX(0)"]) .toggle__option:first-child {
+  color: white;
+}
+
+.toggle__button:has(.toggle__indicator[style*="translateX(100%)"]) .toggle__option:last-child {
+  color: white;
+}
+
+.toggle__button:has(.toggle__indicator[style*="translateX(0)"]) .toggle__option:last-child {
+  color: var(--color-text-secondary);
+}
+
+.toggle__button:has(.toggle__indicator[style*="translateX(100%)"]) .toggle__option:first-child {
+  color: var(--color-text-secondary);
+}
+
+.toggle__button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .toggle {
+    width: 100%;
+    align-items: center;
+  }
+
+  .toggle__button {
+    width: 100%;
+    justify-content: center;
+  }
+}

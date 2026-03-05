@@ -1,0 +1,144 @@
+import { EXPORT_SCALE_FACTOR, CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES } from '../constants';
+import { calculateFitToFrame } from './cropCalculations';
+
+/**
+ * Export canvas to high-quality PNG file
+ * @param {HTMLCanvasElement} sourceCanvas - Source canvas to export
+ * @param {string} filename - Filename for download
+ * @returns {Promise<void>}
+ */
+export function exportCanvasImage(sourceCanvas, filename = 'framed-photo.png') {
+  return new Promise((resolve, reject) => {
+    // Create export canvas at higher resolution
+    const exportCanvas = document.createElement('canvas');
+    const ctx = exportCanvas.getContext('2d', { alpha: false });
+
+    // Scale up for high quality
+    exportCanvas.width = sourceCanvas.width * EXPORT_SCALE_FACTOR;
+    exportCanvas.height = sourceCanvas.height * EXPORT_SCALE_FACTOR;
+
+    // Enable high-quality smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Draw source canvas scaled up
+    ctx.scale(EXPORT_SCALE_FACTOR, EXPORT_SCALE_FACTOR);
+    ctx.drawImage(sourceCanvas, 0, 0);
+
+    // Convert to blob
+    exportCanvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
+          return;
+        }
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Cleanup
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+
+        resolve();
+      },
+      'image/png',
+      1.0
+    );
+  });
+}
+
+/**
+ * Export at original resolution
+ * Renders image at source dimensions for maximum quality
+ * @param {HTMLImageElement} image - Original image
+ * @param {{x: number, y: number, width: number, height: number}} crop - Crop dimensions
+ * @param {{aspectRatio: string, background: string, padding: number}} frameConfig - Frame config
+ * @param {string} filename - Filename for download
+ * @returns {Promise<void>}
+ */
+export function exportAtOriginalResolution(
+  image,
+  crop,
+  frameConfig,
+  filename = 'framed-photo.png'
+) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    // Calculate frame dimensions
+    const frameAspectRatio =
+      frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
+
+    // Use original crop dimensions as base, scale to reasonable export size
+    const targetWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
+    const frameWidth = targetWidth;
+    const frameHeight = Math.round(frameWidth / frameAspectRatio);
+
+    canvas.width = frameWidth;
+    canvas.height = frameHeight;
+
+    // Draw frame background
+    ctx.fillStyle = frameConfig.background === 'black' ? '#000000' : '#FFFFFF';
+    ctx.fillRect(0, 0, frameWidth, frameHeight);
+
+    // Calculate fit
+    const fitDimensions = calculateFitToFrame(
+      crop.width,
+      crop.height,
+      frameWidth,
+      frameHeight,
+      frameConfig.padding * (frameWidth / CANVAS_BASE_WIDTH)
+    );
+
+    // Enable high-quality smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Draw cropped image
+    ctx.drawImage(
+      image,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
+      fitDimensions.x,
+      fitDimensions.y,
+      fitDimensions.width,
+      fitDimensions.height
+    );
+
+    // Export
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+
+        resolve();
+      },
+      'image/png',
+      1.0
+    );
+  });
+}
