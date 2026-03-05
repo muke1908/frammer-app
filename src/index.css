@@ -106,6 +106,10 @@ textarea {
   -webkit-user-select: text;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Utility Classes */
 .sr-only {
   position: absolute;

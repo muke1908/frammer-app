@@ -116,8 +116,13 @@ function buildExportCanvas(image, crop, frameConfig, captionConfig) {
 
 /**
  * Export at original resolution with frame, crop, and optional caption.
- * On iOS: uses toDataURL (sync) so navigator.share() keeps the user gesture.
- * On other platforms: uses toBlob for efficiency, falls back to <a download>.
+ *
+ * iOS strategy (in order):
+ *   1. Web Share API with JPEG file — synchronous blob prep keeps gesture context.
+ *      AbortError = user cancelled, treat as success.
+ *   2. Fallback: open blob URL in new tab so user can save from Safari share sheet.
+ *
+ * Non-iOS: toBlob + <a download> (works on Android Chrome / desktop).
  */
 export async function exportAtOriginalResolution(
   image,
@@ -128,18 +133,40 @@ export async function exportAtOriginalResolution(
 ) {
   const canvas = buildExportCanvas(image, crop, frameConfig, captionConfig);
 
-  // iOS path: toDataURL is synchronous, preserving the user gesture context
-  // so that navigator.share() is not blocked by NotAllowedError.
-  if (isIOS() && navigator.share && navigator.canShare) {
-    const blob = dataURLToBlob(canvas.toDataURL('image/png'));
-    const file = new File([blob], filename, { type: 'image/png' });
-    if (navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: filename });
-      return;
+  if (isIOS()) {
+    // Use JPEG — smaller than PNG, less likely to hit memory limits on iOS.
+    // toDataURL is synchronous so the entire blob is ready before any await,
+    // keeping navigator.share() within the original user gesture activation.
+    const jpgFilename = filename.replace(/\.png$/i, '.jpg');
+    const blob = dataURLToBlob(canvas.toDataURL('image/jpeg', 0.92));
+    const file = new File([blob], jpgFilename, { type: 'image/jpeg' });
+
+    // Try Web Share API (iOS 15+ supports file sharing)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: jpgFilename });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // User dismissed the sheet — that's fine
+        // Any other error: fall through to blob-URL fallback below
+      }
     }
+
+    // Fallback: open the image in a new tab.
+    // In Safari the user can tap the share button → "Save Image" to Photos.
+    const blobURL = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobURL;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobURL), 60_000);
+    return;
   }
 
-  // Non-iOS or share not supported: use toBlob + <a download>
+  // Non-iOS: toBlob + <a download>
   await new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
