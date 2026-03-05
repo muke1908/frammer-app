@@ -1,12 +1,8 @@
-import { EXPORT_SCALE_FACTOR, CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES } from '../constants';
+import { CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES } from '../constants';
 import { calculateFitToFrame } from './cropCalculations';
 
 /**
  * Draw caption (same logic as frameRenderer, for export)
- * @param {CanvasRenderingContext2D} ctx
- * @param {{text: string, size: number, italic: boolean, color: string}} captionConfig
- * @param {{x: number, y: number, width: number, height: number}} fit
- * @param {number} canvasWidth
  */
 function drawCaption(ctx, captionConfig, fit, canvasWidth) {
   if (!captionConfig) return;
@@ -41,7 +37,7 @@ function drawCaption(ctx, captionConfig, fit, canvasWidth) {
 }
 
 /**
- * Detect iOS (iPhone/iPad) where <a download> saves to Files instead of Photos
+ * Detect iOS (iPhone/iPad/iPod) where <a download> saves to Files, not Photos.
  */
 function isIOS() {
   return /iP(hone|ad|od)/.test(navigator.userAgent) ||
@@ -49,18 +45,23 @@ function isIOS() {
 }
 
 /**
- * Save a blob to device. On iOS uses Web Share API so the user can save to Photos.
- * Falls back to <a download> on other platforms.
+ * Convert a data URL to a Blob synchronously.
+ * Critical for iOS: toDataURL is sync so navigator.share() stays within
+ * the user gesture context (toBlob's callback fires in a new task, losing it).
  */
-async function saveBlobToDevice(blob, filename) {
-  if (isIOS() && navigator.share && navigator.canShare) {
-    const file = new File([blob], filename, { type: blob.type });
-    if (navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: filename });
-      return;
-    }
-  }
-  // Standard download for non-iOS
+function dataURLToBlob(dataURL) {
+  const [header, data] = dataURL.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+/**
+ * Trigger a standard <a download> save (Android / desktop).
+ */
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -72,117 +73,82 @@ async function saveBlobToDevice(blob, filename) {
 }
 
 /**
- * Export canvas to high-quality PNG file
- * @param {HTMLCanvasElement} sourceCanvas - Source canvas to export
- * @param {string} filename - Filename for download
- * @returns {Promise<void>}
+ * Build the export canvas with frame + image + caption.
+ * All operations are synchronous so the canvas is ready immediately.
  */
-export function exportCanvasImage(sourceCanvas, filename = 'framed-photo.png') {
-  return new Promise((resolve, reject) => {
-    // Create export canvas at higher resolution
-    const exportCanvas = document.createElement('canvas');
-    const ctx = exportCanvas.getContext('2d', { alpha: false });
+function buildExportCanvas(image, crop, frameConfig, captionConfig) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
 
-    // Scale up for high quality
-    exportCanvas.width = sourceCanvas.width * EXPORT_SCALE_FACTOR;
-    exportCanvas.height = sourceCanvas.height * EXPORT_SCALE_FACTOR;
+  const frameAspectRatio =
+    frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
 
-    // Enable high-quality smoothing
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+  const frameWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
+  const frameHeight = Math.round(frameWidth / frameAspectRatio);
 
-    // Draw source canvas scaled up
-    ctx.scale(EXPORT_SCALE_FACTOR, EXPORT_SCALE_FACTOR);
-    ctx.drawImage(sourceCanvas, 0, 0);
+  canvas.width = frameWidth;
+  canvas.height = frameHeight;
 
-    // Convert to blob
-    exportCanvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
-          return;
-        }
-        saveBlobToDevice(blob, filename).then(resolve).catch(reject);
-      },
-      'image/png',
-      1.0
-    );
-  });
+  ctx.fillStyle = frameConfig.background === 'black' ? '#000000' : '#FFFFFF';
+  ctx.fillRect(0, 0, frameWidth, frameHeight);
+
+  const fitDimensions = calculateFitToFrame(
+    crop.width,
+    crop.height,
+    frameWidth,
+    frameHeight,
+    frameConfig.padding * (frameWidth / CANVAS_BASE_WIDTH)
+  );
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  ctx.drawImage(
+    image,
+    crop.x, crop.y, crop.width, crop.height,
+    fitDimensions.x, fitDimensions.y, fitDimensions.width, fitDimensions.height
+  );
+
+  drawCaption(ctx, captionConfig, fitDimensions, frameWidth);
+
+  return canvas;
 }
 
 /**
- * Export at original resolution
- * Renders image at source dimensions for maximum quality
- * @param {HTMLImageElement} image - Original image
- * @param {{x: number, y: number, width: number, height: number}} crop - Crop dimensions
- * @param {{aspectRatio: string, background: string, padding: number}} frameConfig - Frame config
- * @param {string} filename - Filename for download
- * @returns {Promise<void>}
+ * Export at original resolution with frame, crop, and optional caption.
+ * On iOS: uses toDataURL (sync) so navigator.share() keeps the user gesture.
+ * On other platforms: uses toBlob for efficiency, falls back to <a download>.
  */
-export function exportAtOriginalResolution(
+export async function exportAtOriginalResolution(
   image,
   crop,
   frameConfig,
   filename = 'framed-photo.png',
   captionConfig = null
 ) {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
+  const canvas = buildExportCanvas(image, crop, frameConfig, captionConfig);
 
-    // Calculate frame dimensions
-    const frameAspectRatio =
-      frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
+  // iOS path: toDataURL is synchronous, preserving the user gesture context
+  // so that navigator.share() is not blocked by NotAllowedError.
+  if (isIOS() && navigator.share && navigator.canShare) {
+    const blob = dataURLToBlob(canvas.toDataURL('image/png'));
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }
+  }
 
-    // Use original crop dimensions as base, scale to reasonable export size
-    const targetWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
-    const frameWidth = targetWidth;
-    const frameHeight = Math.round(frameWidth / frameAspectRatio);
-
-    canvas.width = frameWidth;
-    canvas.height = frameHeight;
-
-    // Draw frame background
-    ctx.fillStyle = frameConfig.background === 'black' ? '#000000' : '#FFFFFF';
-    ctx.fillRect(0, 0, frameWidth, frameHeight);
-
-    // Calculate fit
-    const fitDimensions = calculateFitToFrame(
-      crop.width,
-      crop.height,
-      frameWidth,
-      frameHeight,
-      frameConfig.padding * (frameWidth / CANVAS_BASE_WIDTH)
-    );
-
-    // Enable high-quality smoothing
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    // Draw cropped image
-    ctx.drawImage(
-      image,
-      crop.x,
-      crop.y,
-      crop.width,
-      crop.height,
-      fitDimensions.x,
-      fitDimensions.y,
-      fitDimensions.width,
-      fitDimensions.height
-    );
-
-    // Draw caption if provided
-    drawCaption(ctx, captionConfig, fitDimensions, frameWidth);
-
-    // Export
+  // Non-iOS or share not supported: use toBlob + <a download>
+  await new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
           reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
           return;
         }
-        saveBlobToDevice(blob, filename).then(resolve).catch(reject);
+        downloadBlob(blob, filename);
+        resolve();
       },
       'image/png',
       1.0
