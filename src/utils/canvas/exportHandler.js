@@ -74,16 +74,17 @@ function downloadBlob(blob, filename) {
 
 /**
  * Build the export canvas with frame + image + caption.
- * All operations are synchronous so the canvas is ready immediately.
+ * @param {number} [maxWidth] - Cap the canvas width (e.g. for iOS memory limits).
  */
-function buildExportCanvas(image, crop, frameConfig, captionConfig) {
+function buildExportCanvas(image, crop, frameConfig, captionConfig, maxWidth = null) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
 
   const frameAspectRatio =
     frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
 
-  const frameWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
+  let frameWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
+  if (maxWidth !== null) frameWidth = Math.min(frameWidth, maxWidth);
   const frameHeight = Math.round(frameWidth / frameAspectRatio);
 
   canvas.width = frameWidth;
@@ -117,9 +118,13 @@ function buildExportCanvas(image, crop, frameConfig, captionConfig) {
 /**
  * Build a JPEG data URL synchronously — no async, no APIs, no gesture restrictions.
  * Used on iOS to generate the image before showing the save overlay.
+ *
+ * Canvas is capped at CANVAS_BASE_WIDTH (1920px) to stay within iOS WebKit's
+ * canvas memory limit (~16.7 MP). A 1920px portrait canvas is 1920×3413 = 6.5 MP,
+ * safely within the limit for all iOS devices.
  */
 export function buildExportJpegURL(image, crop, frameConfig, captionConfig = null) {
-  return buildExportCanvas(image, crop, frameConfig, captionConfig)
+  return buildExportCanvas(image, crop, frameConfig, captionConfig, CANVAS_BASE_WIDTH)
     .toDataURL('image/jpeg', 0.92);
 }
 
