@@ -74,20 +74,19 @@ function downloadBlob(blob, filename) {
 
 /**
  * Build the export canvas with frame + image + caption.
- * @param {number} [maxWidth] - Cap the canvas width (e.g. for iOS memory limits).
+ * Output is always a fixed resolution:
+ *   Landscape (16:9) → 1920 × 1080
+ *   Portrait  (9:16) → 1080 × 1920
  */
-function buildExportCanvas(image, crop, frameConfig, captionConfig, maxWidth = null) {
+function buildExportCanvas(image, crop, frameConfig, captionConfig) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
 
-  const frameAspectRatio =
-    frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
+  const isLandscape = frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE;
+  const frameWidth  = isLandscape ? 1920 : 1080;
+  const frameHeight = isLandscape ? 1080 : 1920;
 
-  let frameWidth = Math.max(CANVAS_BASE_WIDTH, crop.width);
-  if (maxWidth !== null) frameWidth = Math.min(frameWidth, maxWidth);
-  const frameHeight = Math.round(frameWidth / frameAspectRatio);
-
-  canvas.width = frameWidth;
+  canvas.width  = frameWidth;
   canvas.height = frameHeight;
 
   ctx.fillStyle = frameConfig.background === 'black' ? '#000000' : '#FFFFFF';
@@ -116,15 +115,11 @@ function buildExportCanvas(image, crop, frameConfig, captionConfig, maxWidth = n
 }
 
 /**
- * Build a JPEG data URL synchronously — no async, no APIs, no gesture restrictions.
- * Used on iOS to generate the image before showing the save overlay.
- *
- * Canvas is capped at CANVAS_BASE_WIDTH (1920px) to stay within iOS WebKit's
- * canvas memory limit (~16.7 MP). A 1920px portrait canvas is 1920×3413 = 6.5 MP,
- * safely within the limit for all iOS devices.
+ * Build a JPEG data URL synchronously — used on iOS for the save overlay.
+ * Fixed output: 1920×1080 (landscape) or 1080×1920 (portrait).
  */
 export function buildExportJpegURL(image, crop, frameConfig, captionConfig = null) {
-  return buildExportCanvas(image, crop, frameConfig, captionConfig, CANVAS_BASE_WIDTH)
+  return buildExportCanvas(image, crop, frameConfig, captionConfig)
     .toDataURL('image/jpeg', 0.92);
 }
 
