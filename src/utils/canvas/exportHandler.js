@@ -2,6 +2,37 @@ import { EXPORT_SCALE_FACTOR, CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES }
 import { calculateFitToFrame } from './cropCalculations';
 
 /**
+ * Detect iOS (iPhone/iPad) where <a download> saves to Files instead of Photos
+ */
+function isIOS() {
+  return /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+}
+
+/**
+ * Save a blob to device. On iOS uses Web Share API so the user can save to Photos.
+ * Falls back to <a download> on other platforms.
+ */
+async function saveBlobToDevice(blob, filename) {
+  if (isIOS() && navigator.share && navigator.canShare) {
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }
+  }
+  // Standard download for non-iOS
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+/**
  * Export canvas to high-quality PNG file
  * @param {HTMLCanvasElement} sourceCanvas - Source canvas to export
  * @param {string} filename - Filename for download
@@ -32,22 +63,7 @@ export function exportCanvasImage(sourceCanvas, filename = 'framed-photo.png') {
           reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
           return;
         }
-
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Cleanup
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-
-        resolve();
+        saveBlobToDevice(blob, filename).then(resolve).catch(reject);
       },
       'image/png',
       1.0
@@ -123,19 +139,7 @@ export function exportAtOriginalResolution(
           reject(new Error(ERROR_MESSAGES.EXPORT_FAILED));
           return;
         }
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-
-        resolve();
+        saveBlobToDevice(blob, filename).then(resolve).catch(reject);
       },
       'image/png',
       1.0
