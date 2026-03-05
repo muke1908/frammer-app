@@ -19,8 +19,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-base) var(--space-sm);
+  padding: 10px 6px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .control-panel__divider {
