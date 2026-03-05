@@ -9,7 +9,7 @@ function drawCaption(ctx, caption, fit, canvasWidth) {
   if (!text) return;
 
   const fontSize = Math.max(13, Math.round(canvasWidth * 0.026));
-  ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif`;
+  ctx.font = `600 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -37,7 +37,7 @@ function drawCaption(ctx, caption, fit, canvasWidth) {
   ctx.shadowOffsetY = 1;
 
   // White text
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = '#F5C518';
   ctx.fillText(displayText, centerX, barY + vPad + fontSize / 2);
 
   // Reset shadow
