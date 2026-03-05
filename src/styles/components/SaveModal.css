@@ -1,0 +1,66 @@
+.save-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 20px) 20px env(safe-area-inset-bottom, 20px);
+  animation: fade-in 0.18s ease both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.save-modal__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.save-modal__hint {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.save-modal__hint strong {
+  color: #fff;
+}
+
+.save-modal__img {
+  max-width: 100%;
+  max-height: 58vh;
+  border-radius: 10px;
+  object-fit: contain;
+  display: block;
+  /* Override global user-select/touch-callout so the long-press context menu appears */
+  -webkit-touch-callout: default;
+  -webkit-user-select: auto;
+  user-select: auto;
+  touch-action: auto;
+}
+
+.save-modal__close {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 36px;
+  transition: background 0.15s;
+}
+
+.save-modal__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

@@ -39,7 +39,7 @@ function drawCaption(ctx, captionConfig, fit, canvasWidth) {
 /**
  * Detect iOS (iPhone/iPad/iPod) where <a download> saves to Files, not Photos.
  */
-function isIOS() {
+export function isIOS() {
   return /iP(hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
 }
@@ -112,6 +112,15 @@ function buildExportCanvas(image, crop, frameConfig, captionConfig) {
   drawCaption(ctx, captionConfig, fitDimensions, frameWidth);
 
   return canvas;
+}
+
+/**
+ * Build a JPEG data URL synchronously — no async, no APIs, no gesture restrictions.
+ * Used on iOS to generate the image before showing the save overlay.
+ */
+export function buildExportJpegURL(image, crop, frameConfig, captionConfig = null) {
+  return buildExportCanvas(image, crop, frameConfig, captionConfig)
+    .toDataURL('image/jpeg', 0.92);
 }
 
 /**

@@ -15,6 +15,8 @@ import { calculateCrop } from './utils/canvas/cropCalculations';
 import { CROP_PRESETS, ASPECT_RATIOS, FRAME_BACKGROUNDS, DEFAULT_FRAME_PADDING } from './utils/constants';
 import { useToast } from './contexts/ToastContext';
 import CaptionPanel from './components/controls/CaptionPanel';
+import SaveModal from './components/ui/SaveModal';
+import { isIOS, buildExportJpegURL } from './utils/canvas/exportHandler';
 
 // Initial State
 const initialState = {
@@ -144,6 +146,7 @@ function App() {
   const toast = useToast();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showCaptionPanel, setShowCaptionPanel] = useState(false);
+  const [savePreviewURL, setSavePreviewURL] = useState(null);
   const [captionConfig, setCaptionConfig] = useState({
     text: '',
     size: 15,
@@ -186,14 +189,22 @@ function App() {
     state.crop.offsetY,
   ]);
 
-  const handleExport = useCallback(async () => {
+  const handleExport = useCallback(() => {
     if (!state.image.original || !currentCrop) return;
-    try {
-      await exportImage(state.image.original, currentCrop, state.frame, captionConfig.text ? captionConfig : null);
-      toast.success('Photo downloaded successfully!');
-    } catch (error) {
-      toast.error('Failed to export photo. Please try again.');
+    const effectiveCaption = captionConfig.text ? captionConfig : null;
+
+    if (isIOS()) {
+      // On iOS (browser + PWA): generate synchronously and show save overlay.
+      // The user long-presses the image → "Save to Photos". Works in all contexts.
+      const jpegURL = buildExportJpegURL(state.image.original, currentCrop, state.frame, effectiveCaption);
+      setSavePreviewURL(jpegURL);
+      return;
     }
+
+    // Non-iOS: async download via <a download>
+    exportImage(state.image.original, currentCrop, state.frame, effectiveCaption)
+      .then(() => toast.success('Photo downloaded successfully!'))
+      .catch(() => toast.error('Failed to export photo. Please try again.'));
   }, [state.image.original, currentCrop, state.frame, captionConfig, exportImage, toast]);
 
   const handleResetClick = useCallback(() => {
@@ -203,6 +214,7 @@ function App() {
   const handleResetConfirm = useCallback(() => {
     setShowResetConfirm(false);
     setShowCaptionPanel(false);
+    setSavePreviewURL(null);
     setCaptionConfig({ text: '', size: 15, italic: false, color: '#FFFFFF' });
     dispatch({ type: ACTIONS.RESET });
     toast.info('Starting fresh! Upload a new photo.');
@@ -300,6 +312,12 @@ function App() {
             onConfirm={handleResetConfirm}
             onCancel={handleResetCancel}
           />
+          {savePreviewURL && (
+            <SaveModal
+              imageURL={savePreviewURL}
+              onClose={() => setSavePreviewURL(null)}
+            />
+          )}
         </>
       ) : (
         <FileUpload onFileLoad={handleFileLoad} />
