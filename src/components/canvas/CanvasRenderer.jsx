@@ -1,8 +1,8 @@
 import { useCanvas } from './useCanvas';
 import '../../styles/components/CanvasRenderer.css';
 
-export default function CanvasRenderer({ image, crop, frameConfig }) {
-  const canvasRef = useCanvas(image, crop, frameConfig);
+export default function CanvasRenderer({ image, crop, frameConfig, caption }) {
+  const canvasRef = useCanvas(image, crop, frameConfig, caption);
 
   return (
     <div className="canvas-renderer">

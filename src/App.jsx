@@ -14,6 +14,7 @@ import { useCanvasExport } from './hooks/useCanvasExport';
 import { calculateCrop } from './utils/canvas/cropCalculations';
 import { CROP_PRESETS, ASPECT_RATIOS, FRAME_BACKGROUNDS, DEFAULT_FRAME_PADDING } from './utils/constants';
 import { useToast } from './contexts/ToastContext';
+import CaptionInput from './components/controls/CaptionInput';
 
 // Initial State
 const initialState = {
@@ -142,6 +143,7 @@ function App() {
   const { isExporting, exportImage } = useCanvasExport();
   const toast = useToast();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [caption, setCaption] = useState('');
 
   const handleFileLoad = useCallback((imageData) => {
     dispatch({ type: ACTIONS.SET_IMAGE, payload: imageData });
@@ -181,7 +183,7 @@ function App() {
   const handleExport = useCallback(async () => {
     if (!state.image.original || !currentCrop) return;
     try {
-      await exportImage(state.image.original, currentCrop, state.frame);
+      await exportImage(state.image.original, currentCrop, state.frame, caption);
       toast.success('Photo downloaded successfully!');
     } catch (error) {
       toast.error('Failed to export photo. Please try again.');
@@ -194,6 +196,7 @@ function App() {
 
   const handleResetConfirm = useCallback(() => {
     setShowResetConfirm(false);
+    setCaption('');
     dispatch({ type: ACTIONS.RESET });
     toast.info('Starting fresh! Upload a new photo.');
   }, [toast]);
@@ -233,7 +236,9 @@ function App() {
             imageState={state.image}
             cropState={state.crop}
             frameConfig={state.frame}
+            caption={caption}
           >
+            <CaptionInput value={caption} onChange={setCaption} />
             <ControlPanel>
               <CropControls
                 currentPreset={state.crop.preset}

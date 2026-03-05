@@ -2,6 +2,44 @@ import { EXPORT_SCALE_FACTOR, CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES }
 import { calculateFitToFrame } from './cropCalculations';
 
 /**
+ * Draw cinematic subtitle caption (same logic as frameRenderer, for export)
+ */
+function drawCaption(ctx, caption, fit, canvasWidth) {
+  const text = caption.trim();
+  if (!text) return;
+
+  const fontSize = Math.max(20, Math.round(canvasWidth * 0.026));
+  ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const maxTextWidth = fit.width * 0.88;
+  let displayText = text;
+  while (ctx.measureText(displayText).width > maxTextWidth && displayText.length > 0) {
+    displayText = displayText.slice(0, -1);
+  }
+  if (displayText !== text) displayText = displayText.slice(0, -1) + '…';
+
+  const vPad = fontSize * 0.55;
+  const barHeight = fontSize + vPad * 2;
+  const barY = fit.y + fit.height - barHeight - Math.round(canvasWidth * 0.018);
+  const centerX = fit.x + fit.width / 2;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.52)';
+  ctx.fillRect(fit.x, barY, fit.width, barHeight);
+
+  ctx.shadowColor = 'rgba(0,0,0,0.9)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(displayText, centerX, barY + vPad + fontSize / 2);
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
+
+/**
  * Detect iOS (iPhone/iPad) where <a download> saves to Files instead of Photos
  */
 function isIOS() {
@@ -84,7 +122,8 @@ export function exportAtOriginalResolution(
   image,
   crop,
   frameConfig,
-  filename = 'framed-photo.png'
+  filename = 'framed-photo.png',
+  caption = ''
 ) {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -131,6 +170,9 @@ export function exportAtOriginalResolution(
       fitDimensions.width,
       fitDimensions.height
     );
+
+    // Draw cinematic caption if provided
+    drawCaption(ctx, caption, fitDimensions, frameWidth);
 
     // Export
     canvas.toBlob(

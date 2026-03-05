@@ -9,7 +9,7 @@ export function useCanvasExport() {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
 
-  const exportImage = useCallback(async (image, crop, frameConfig) => {
+  const exportImage = useCallback(async (image, crop, frameConfig, caption = '') => {
     try {
       setIsExporting(true);
       setError(null);
@@ -17,7 +17,7 @@ export function useCanvasExport() {
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `framed-photo-${timestamp}.png`;
 
-      await exportAtOriginalResolution(image, crop, frameConfig, filename);
+      await exportAtOriginalResolution(image, crop, frameConfig, filename, caption);
 
       setIsExporting(false);
     } catch (err) {
