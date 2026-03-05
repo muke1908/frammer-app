@@ -24,79 +24,63 @@
 
 /* PRIMARY - For main actions (Export/Download) */
 .button--primary {
-  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: var(--color-primary);
   color: white;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(37, 99, 235, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-weight: var(--font-semibold);
 }
 
 .button--primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.1),
-    0 2px 4px rgba(37, 99, 235, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  background: var(--color-primary-hover);
 }
 
 .button--primary:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(37, 99, 235, 0.2);
+  opacity: 0.85;
 }
 
 /* SECONDARY - For less important actions */
 .button--secondary {
-  background: var(--color-surface);
+  background: var(--color-surface-elevated);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-border-strong);
 }
 
 .button--secondary:hover:not(:disabled) {
-  background: var(--color-background);
-  border-color: var(--color-border-strong);
-  transform: translateY(-1px);
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: var(--color-border-strong);
 }
 
 .button--secondary:active:not(:disabled) {
-  transform: translateY(0);
+  opacity: 0.8;
+}
+
+/* GHOST - Transparent, for header actions */
+.button--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  font-weight: var(--font-medium);
+}
+
+.button--ghost:hover:not(:disabled) {
+  color: var(--color-text);
   background: var(--color-overlay);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.button--ghost:active:not(:disabled) {
+  opacity: 0.7;
 }
 
 /* DANGER - For destructive actions */
 .button--danger {
-  background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+  background: var(--color-error);
   color: white;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .button--danger:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.1),
-    0 2px 4px rgba(239, 68, 68, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  opacity: 0.9;
 }
 
 .button--danger:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(239, 68, 68, 0.2);
+  opacity: 0.8;
 }
 
 /* SIZES */
@@ -122,12 +106,7 @@
 }
 
 .button svg {
-  transition: transform var(--transition-base);
   flex-shrink: 0;
-}
-
-.button:hover:not(:disabled) svg {
-  transform: translateY(-1px);
 }
 
 .export-button__spinner {

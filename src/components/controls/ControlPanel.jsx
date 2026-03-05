@@ -5,23 +5,17 @@ export default function ControlPanel({ children }) {
 
   return (
     <div className="control-panel">
-      <div className="control-panel__section control-panel__section--left">
+      <div className="control-panel__group">
         {childrenArray[0]} {/* CropControls */}
       </div>
-
-      {childrenArray.length > 1 && (
-        <>
-          <div className="control-panel__section control-panel__section--center">
-            {childrenArray[1]} {/* AspectRatioToggle */}
-            <div className="control-panel__divider" aria-hidden="true" />
-            {childrenArray[2]} {/* BackgroundToggle */}
-          </div>
-
-          <div className="control-panel__section control-panel__section--right">
-            {childrenArray[3]} {/* ExportButton */}
-          </div>
-        </>
-      )}
+      <div className="control-panel__divider" aria-hidden="true" />
+      <div className="control-panel__group">
+        {childrenArray[1]} {/* AspectRatioToggle */}
+      </div>
+      <div className="control-panel__divider" aria-hidden="true" />
+      <div className="control-panel__group">
+        {childrenArray[2]} {/* BackgroundToggle */}
+      </div>
     </div>
   );
 }

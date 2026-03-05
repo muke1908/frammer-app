@@ -6,9 +6,8 @@ export default function ExportButton({ onClick, isExporting, disabled }) {
       onClick={onClick}
       disabled={disabled || isExporting}
       variant="primary"
-      size="large"
+      size="medium"
       aria-label="Download framed photo"
-      tooltip="Download your framed photo as PNG"
     >
       {isExporting ? (
         <>

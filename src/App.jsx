@@ -206,9 +206,28 @@ function App() {
     dispatch({ type: ACTIONS.SET_CROP_OFFSET, payload: offset });
   }, []);
 
+  const hasImage = !!state.image.original;
+
   return (
-    <AppLayout>
-      {state.image.original ? (
+    <AppLayout
+      headerLeft={hasImage ? (
+        <Button
+          onClick={handleResetClick}
+          variant="ghost"
+          size="small"
+        >
+          New
+        </Button>
+      ) : null}
+      headerRight={hasImage ? (
+        <ExportButton
+          onClick={handleExport}
+          isExporting={isExporting}
+          disabled={!hasImage}
+        />
+      ) : null}
+    >
+      {hasImage ? (
         <>
           <CanvasEditor
             imageState={state.image}
@@ -228,11 +247,6 @@ function App() {
                 background={state.frame.background}
                 onToggle={handleBackgroundToggle}
               />
-              <ExportButton
-                onClick={handleExport}
-                isExporting={isExporting}
-                disabled={!state.image.original}
-              />
             </ControlPanel>
             {state.crop.preset !== CROP_PRESETS.NONE && (
               <DraggableCropPreview
@@ -245,15 +259,6 @@ function App() {
               />
             )}
           </CanvasEditor>
-          <Button
-            onClick={handleResetClick}
-            variant="secondary"
-            size="medium"
-            style={{ marginTop: 'var(--space-lg)' }}
-            tooltip="Start over with a new photo"
-          >
-            Upload New Photo
-          </Button>
           <ConfirmDialog
             isOpen={showResetConfirm}
             title="Upload New Photo?"
