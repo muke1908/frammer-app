@@ -3,11 +3,15 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-sticky);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
+  backdrop-filter: blur(16px);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .control-panel__group {
@@ -24,14 +28,4 @@
   height: 36px;
   background: var(--color-border);
   flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-  .control-panel {
-    border-radius: var(--radius-lg);
-  }
-
-  .control-panel__group {
-    padding: var(--space-sm) var(--space-xs);
-  }
 }

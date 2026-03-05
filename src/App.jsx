@@ -34,8 +34,8 @@ const initialState = {
     offsetY: 0,
   },
   frame: {
-    aspectRatio: ASPECT_RATIOS.LANDSCAPE,
-    background: FRAME_BACKGROUNDS.BLACK,
+    aspectRatio: ASPECT_RATIOS.PORTRAIT,
+    background: FRAME_BACKGROUNDS.WHITE,
     padding: DEFAULT_FRAME_PADDING,
   },
   ui: {

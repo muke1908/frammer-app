@@ -5,13 +5,14 @@
   background: var(--color-background);
 }
 
+/* 90px bottom padding to clear the fixed control panel (~72px bar + some breathing room) */
 .app-layout__main {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-xl) var(--space-lg) var(--space-lg);
+  padding: var(--space-xl) var(--space-lg) 90px;
   max-width: var(--max-width);
   margin: 0 auto;
   width: 100%;
@@ -19,12 +20,12 @@
 
 @media (max-width: 768px) {
   .app-layout__main {
-    padding: var(--space-lg) var(--space-base) var(--space-base);
+    padding: var(--space-lg) var(--space-base) 90px;
   }
 }
 
 @media (max-width: 640px) {
   .app-layout__main {
-    padding: var(--space-base) var(--space-sm) var(--space-base);
+    padding: var(--space-base) var(--space-sm) 80px;
   }
 }
