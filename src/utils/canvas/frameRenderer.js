@@ -37,12 +37,14 @@ export function renderFramedImage(canvas, image, crop, frameConfig, pixelRatio =
   ctx.fillRect(0, 0, baseWidth, baseHeight);
 
   // Calculate where to draw the image
+  // Scale padding proportionally to frame size so preview matches export 1:1
+  const scaledPadding = frameConfig.padding * (baseWidth / CANVAS_BASE_WIDTH);
   const fitDimensions = calculateFitToFrame(
     crop.width,
     crop.height,
     baseWidth,
     baseHeight,
-    frameConfig.padding
+    scaledPadding
   );
 
   // Enable high-quality image smoothing
