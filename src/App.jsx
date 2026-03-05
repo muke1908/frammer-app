@@ -14,7 +14,7 @@ import { useCanvasExport } from './hooks/useCanvasExport';
 import { calculateCrop } from './utils/canvas/cropCalculations';
 import { CROP_PRESETS, ASPECT_RATIOS, FRAME_BACKGROUNDS, DEFAULT_FRAME_PADDING } from './utils/constants';
 import { useToast } from './contexts/ToastContext';
-import CaptionInput from './components/controls/CaptionInput';
+import CaptionPanel from './components/controls/CaptionPanel';
 
 // Initial State
 const initialState = {
@@ -143,7 +143,13 @@ function App() {
   const { isExporting, exportImage } = useCanvasExport();
   const toast = useToast();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [caption, setCaption] = useState('');
+  const [showCaptionPanel, setShowCaptionPanel] = useState(false);
+  const [captionConfig, setCaptionConfig] = useState({
+    text: '',
+    size: 15,
+    italic: false,
+    color: '#FFFFFF',
+  });
 
   const handleFileLoad = useCallback((imageData) => {
     dispatch({ type: ACTIONS.SET_IMAGE, payload: imageData });
@@ -183,12 +189,12 @@ function App() {
   const handleExport = useCallback(async () => {
     if (!state.image.original || !currentCrop) return;
     try {
-      await exportImage(state.image.original, currentCrop, state.frame, caption);
+      await exportImage(state.image.original, currentCrop, state.frame, captionConfig.text ? captionConfig : null);
       toast.success('Photo downloaded successfully!');
     } catch (error) {
       toast.error('Failed to export photo. Please try again.');
     }
-  }, [state.image.original, currentCrop, state.frame, exportImage, toast]);
+  }, [state.image.original, currentCrop, state.frame, captionConfig, exportImage, toast]);
 
   const handleResetClick = useCallback(() => {
     setShowResetConfirm(true);
@@ -196,7 +202,8 @@ function App() {
 
   const handleResetConfirm = useCallback(() => {
     setShowResetConfirm(false);
-    setCaption('');
+    setShowCaptionPanel(false);
+    setCaptionConfig({ text: '', size: 15, italic: false, color: '#FFFFFF' });
     dispatch({ type: ACTIONS.RESET });
     toast.info('Starting fresh! Upload a new photo.');
   }, [toast]);
@@ -236,10 +243,17 @@ function App() {
             imageState={state.image}
             cropState={state.crop}
             frameConfig={state.frame}
-            caption={caption}
+            captionConfig={captionConfig.text ? captionConfig : null}
           >
-            <CaptionInput value={caption} onChange={setCaption} />
-            <ControlPanel>
+            <ControlPanel
+              panel={showCaptionPanel ? (
+                <CaptionPanel
+                  config={captionConfig}
+                  onChange={setCaptionConfig}
+                  onClose={() => setShowCaptionPanel(false)}
+                />
+              ) : null}
+            >
               <CropControls
                 currentPreset={state.crop.preset}
                 onPresetChange={handleCropPresetChange}
@@ -252,6 +266,18 @@ function App() {
                 background={state.frame.background}
                 onToggle={handleBackgroundToggle}
               />
+              <div className="caption-trigger">
+                <span className="caption-trigger__label">Caption</span>
+                <button
+                  className={`caption-trigger__btn ${captionConfig.text ? 'caption-trigger__btn--active' : ''}`}
+                  onClick={() => setShowCaptionPanel(v => !v)}
+                  type="button"
+                >
+                  {captionConfig.text
+                    ? captionConfig.text.slice(0, 12) + (captionConfig.text.length > 12 ? '…' : '')
+                    : 'Add…'}
+                </button>
+              </div>
             </ControlPanel>
             {state.crop.preset !== CROP_PRESETS.NONE && (
               <DraggableCropPreview

@@ -2,18 +2,26 @@ import { calculateFitToFrame } from './cropCalculations';
 import { CANVAS_BASE_WIDTH, ASPECT_RATIOS } from '../constants';
 
 /**
- * Draw cinematic subtitle caption over the image area
+ * Draw caption over the image area
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{text: string, size: number, italic: boolean, color: string}} captionConfig
+ * @param {{x: number, y: number, width: number, height: number}} fit
+ * @param {number} canvasWidth
  */
-function drawCaption(ctx, caption, fit, canvasWidth) {
-  const text = caption.trim();
+function drawCaption(ctx, captionConfig, fit, canvasWidth) {
+  if (!captionConfig) return;
+  const text = captionConfig.text.trim();
   if (!text) return;
 
-  const fontSize = Math.max(13, Math.round(canvasWidth * 0.026));
-  ctx.font = `600 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+  // Scale font size from reference 1920px to actual canvas width
+  const scaledSize = captionConfig.size * (canvasWidth / 1920);
+  const fontSize = Math.max(8, Math.round(scaledSize));
+  const style = captionConfig.italic ? 'italic ' : '';
+  ctx.font = `${style}${fontSize}px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Measure and clip text to fit width
+  // Clip text to fit width
   const maxTextWidth = fit.width * 0.88;
   let displayText = text;
   while (ctx.measureText(displayText).width > maxTextWidth && displayText.length > 0) {
@@ -21,28 +29,19 @@ function drawCaption(ctx, caption, fit, canvasWidth) {
   }
   if (displayText !== text) displayText = displayText.slice(0, -1) + '…';
 
-  const vPad = fontSize * 0.55;
-  const barHeight = fontSize + vPad * 2;
-  const barY = fit.y + fit.height - barHeight - Math.round(canvasWidth * 0.018);
+  const bottomMargin = Math.round(canvasWidth * 0.018);
+  const textY = fit.y + fit.height - bottomMargin - fontSize / 2;
   const centerX = fit.x + fit.width / 2;
 
-  // Semi-transparent bar
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.52)';
-  ctx.fillRect(fit.x, barY, fit.width, barHeight);
+  // Stroke outline for readability (no background bar)
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.lineWidth = Math.max(2, fontSize * 0.12);
+  ctx.lineJoin = 'round';
+  ctx.strokeText(displayText, centerX, textY);
 
-  // Text shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.9)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 1;
-
-  // White text
-  ctx.fillStyle = '#F5C518';
-  ctx.fillText(displayText, centerX, barY + vPad + fontSize / 2);
-
-  // Reset shadow
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
+  // Fill text
+  ctx.fillStyle = captionConfig.color;
+  ctx.fillText(displayText, centerX, textY);
 }
 
 /**
@@ -54,7 +53,7 @@ function drawCaption(ctx, caption, fit, canvasWidth) {
  * @param {number} pixelRatio - Device pixel ratio for retina displays
  * @param {string} caption - Optional caption text
  */
-export function renderFramedImage(canvas, image, crop, frameConfig, pixelRatio = 1, caption = '') {
+export function renderFramedImage(canvas, image, crop, frameConfig, pixelRatio = 1, captionConfig = null) {
   const ctx = canvas.getContext('2d', { alpha: false });
 
   // Calculate canvas dimensions based on frame aspect ratio
@@ -108,6 +107,6 @@ export function renderFramedImage(canvas, image, crop, frameConfig, pixelRatio =
     fitDimensions.height
   );
 
-  // Draw cinematic caption if provided
-  drawCaption(ctx, caption, fitDimensions, baseWidth);
+  // Draw caption if provided
+  drawCaption(ctx, captionConfig, fitDimensions, baseWidth);
 }

@@ -3,7 +3,7 @@ import CanvasRenderer from './CanvasRenderer';
 import { calculateCrop } from '../../utils/canvas/cropCalculations';
 import '../../styles/components/CanvasEditor.css';
 
-export default function CanvasEditor({ imageState, cropState, frameConfig, caption, children }) {
+export default function CanvasEditor({ imageState, cropState, frameConfig, captionConfig, children }) {
   // Calculate crop dimensions based on preset and offset
   const crop = useMemo(() => {
     if (!imageState.original) {
@@ -31,7 +31,7 @@ export default function CanvasEditor({ imageState, cropState, frameConfig, capti
 
   return (
     <div className="canvas-editor">
-      <CanvasRenderer image={imageState.original} crop={crop} frameConfig={frameConfig} caption={caption} />
+      <CanvasRenderer image={imageState.original} crop={crop} frameConfig={frameConfig} captionConfig={captionConfig} />
       {children}
     </div>
   );

@@ -8,7 +8,7 @@ import { renderFramedImage } from '../../utils/canvas/frameRenderer';
  * @param {{aspectRatio: string, background: string, padding: number}} frameConfig - Frame configuration
  * @returns {React.RefObject} Canvas ref
  */
-export function useCanvas(image, crop, frameConfig, caption = '') {
+export function useCanvas(image, crop, frameConfig, captionConfig = null) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -17,8 +17,8 @@ export function useCanvas(image, crop, frameConfig, caption = '') {
     const canvas = canvasRef.current;
     const pixelRatio = window.devicePixelRatio || 1;
 
-    renderFramedImage(canvas, image, crop, frameConfig, pixelRatio, caption);
-  }, [image, crop, frameConfig, caption]);
+    renderFramedImage(canvas, image, crop, frameConfig, pixelRatio, captionConfig);
+  }, [image, crop, frameConfig, captionConfig]);
 
   return canvasRef;
 }

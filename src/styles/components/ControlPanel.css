@@ -1,32 +1,82 @@
 .control-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: var(--z-sticky);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
   backdrop-filter: blur(16px);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.control-panel__group {
-  flex: 1;
+/* The scrollable icon bar */
+.control-panel__bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 6px;
-  min-width: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-top: 1px solid var(--color-border);
 }
 
-.control-panel__divider {
-  width: 1px;
-  height: 36px;
-  background: var(--color-border);
+.control-panel__bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each control section (Crop / Frame / Background / Caption) */
+.control-panel__section {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  padding: 10px 20px;
+}
+
+.control-panel__section + .control-panel__section {
+  border-left: 1px solid var(--color-border);
+}
+
+/* Caption trigger button — last section */
+.caption-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.caption-trigger__label {
+  font-size: 10px;
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.caption-trigger__btn {
+  background: var(--color-background);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  padding: 5px 14px;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  letter-spacing: var(--tracking-wide);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caption-trigger__btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.caption-trigger__btn--active {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }

@@ -1,0 +1,197 @@
+.caption-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  animation: caption-panel-in 0.22s cubic-bezier(0.32, 0, 0.15, 1) both;
+}
+
+@keyframes caption-panel-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.caption-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.caption-panel__title {
+  font-size: 13px;
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.caption-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.caption-panel__close:hover {
+  color: var(--color-text);
+}
+
+.caption-panel__input {
+  width: 100%;
+  background: var(--color-background);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.caption-panel__input:focus {
+  border-color: var(--color-text-secondary);
+}
+
+.caption-panel__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.caption-panel__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.caption-panel__control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.caption-panel__control--grow {
+  flex: 1;
+  align-items: stretch;
+}
+
+.caption-panel__control-label {
+  font-size: 10px;
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  text-align: center;
+}
+
+/* Size slider */
+.caption-panel__slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.caption-panel__slider-bound {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  min-width: 14px;
+  text-align: center;
+}
+
+.caption-panel__slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--color-border-strong);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.caption-panel__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-text);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.caption-panel__slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--color-text);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+/* Italic pill */
+.caption-panel__pill {
+  background: var(--color-background);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 600;
+  font-family: Georgia, 'Times New Roman', serif;
+  transition: all var(--transition-fast);
+  line-height: 1.4;
+}
+
+.caption-panel__pill:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.caption-panel__pill--active {
+  background: var(--color-text);
+  color: var(--color-background);
+  border-color: var(--color-text);
+}
+
+/* Color swatches */
+.caption-panel__swatches {
+  display: flex;
+  gap: 6px;
+}
+
+.caption-panel__swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-border-strong);
+}
+
+.caption-panel__swatch:hover {
+  transform: scale(1.1);
+}
+
+.caption-panel__swatch--active {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-text);
+}

@@ -16,6 +16,10 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Prevent elastic bounce/pull-to-refresh at the html level */
+  overscroll-behavior: none;
+  /* Lock height to real viewport (accounts for dynamic address bar on mobile) */
+  height: 100%;
 }
 
 body {
@@ -25,8 +29,15 @@ body {
   line-height: 1.5;
   color: var(--color-text);
   background-color: var(--color-background);
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100%;
   color-scheme: dark;
+  /* Prevent pull-to-refresh and overscroll bounce */
+  overscroll-behavior: none;
+  /* Prevent long-press callout on iOS (context menus on images/links) */
+  -webkit-touch-callout: none;
+  /* Remove iOS tap highlight flash */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Typography */
@@ -56,6 +67,8 @@ button {
   border: none;
   background: none;
   padding: 0;
+  /* Kill double-tap zoom on all buttons — single tap fires immediately */
+  touch-action: manipulation;
 }
 
 button:disabled {
@@ -78,9 +91,19 @@ img {
 
 /* Root Container */
 #root {
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  /* Prevent text selection on UI chrome (buttons, labels, controls) */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Re-enable selection for text inputs */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Utility Classes */

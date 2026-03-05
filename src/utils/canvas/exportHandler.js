@@ -2,41 +2,42 @@ import { EXPORT_SCALE_FACTOR, CANVAS_BASE_WIDTH, ASPECT_RATIOS, ERROR_MESSAGES }
 import { calculateFitToFrame } from './cropCalculations';
 
 /**
- * Draw cinematic subtitle caption (same logic as frameRenderer, for export)
+ * Draw caption (same logic as frameRenderer, for export)
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{text: string, size: number, italic: boolean, color: string}} captionConfig
+ * @param {{x: number, y: number, width: number, height: number}} fit
+ * @param {number} canvasWidth
  */
-function drawCaption(ctx, caption, fit, canvasWidth) {
-  const text = caption.trim();
+function drawCaption(ctx, captionConfig, fit, canvasWidth) {
+  if (!captionConfig) return;
+  const text = captionConfig.text.trim();
   if (!text) return;
 
-  const fontSize = Math.max(20, Math.round(canvasWidth * 0.026));
-  ctx.font = `600 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+  const scaledSize = captionConfig.size * (canvasWidth / 1920);
+  const fontSize = Math.max(8, Math.round(scaledSize));
+  const style = captionConfig.italic ? 'italic ' : '';
+  ctx.font = `${style}${fontSize}px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
   const maxTextWidth = fit.width * 0.88;
-  let displayText = text;
+  let displayText = captionConfig.text.trim();
   while (ctx.measureText(displayText).width > maxTextWidth && displayText.length > 0) {
     displayText = displayText.slice(0, -1);
   }
   if (displayText !== text) displayText = displayText.slice(0, -1) + '…';
 
-  const vPad = fontSize * 0.55;
-  const barHeight = fontSize + vPad * 2;
-  const barY = fit.y + fit.height - barHeight - Math.round(canvasWidth * 0.018);
+  const bottomMargin = Math.round(canvasWidth * 0.018);
+  const textY = fit.y + fit.height - bottomMargin - fontSize / 2;
   const centerX = fit.x + fit.width / 2;
 
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.52)';
-  ctx.fillRect(fit.x, barY, fit.width, barHeight);
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.lineWidth = Math.max(2, fontSize * 0.12);
+  ctx.lineJoin = 'round';
+  ctx.strokeText(displayText, centerX, textY);
 
-  ctx.shadowColor = 'rgba(0,0,0,0.9)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 1;
-  ctx.fillStyle = '#F5C518';
-  ctx.fillText(displayText, centerX, barY + vPad + fontSize / 2);
-
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = captionConfig.color;
+  ctx.fillText(displayText, centerX, textY);
 }
 
 /**
@@ -123,7 +124,7 @@ export function exportAtOriginalResolution(
   crop,
   frameConfig,
   filename = 'framed-photo.png',
-  caption = ''
+  captionConfig = null
 ) {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -171,8 +172,8 @@ export function exportAtOriginalResolution(
       fitDimensions.height
     );
 
-    // Draw cinematic caption if provided
-    drawCaption(ctx, caption, fitDimensions, frameWidth);
+    // Draw caption if provided
+    drawCaption(ctx, captionConfig, fitDimensions, frameWidth);
 
     // Export
     canvas.toBlob(

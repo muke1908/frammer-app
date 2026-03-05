@@ -3,7 +3,6 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
-  width: 100%;
 }
 
 .toggle__label {
@@ -17,7 +16,7 @@
 .toggle__button {
   position: relative;
   display: flex;
-  width: 100%;
+  min-width: 110px;
   align-items: center;
   padding: 3px;
   background: var(--color-background);
