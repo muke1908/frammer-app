@@ -9,8 +9,8 @@ function drawCaption(ctx, captionConfig, fit, canvasWidth) {
   const text = captionConfig.text.trim();
   if (!text) return;
 
-  const scaledSize = captionConfig.size * (canvasWidth / 1920);
-  const fontSize = Math.max(8, Math.round(scaledSize));
+  const scaledSize = captionConfig.size * 4 * (canvasWidth / 1920);
+  const fontSize = Math.max(12, Math.round(scaledSize));
   const style = captionConfig.italic ? 'italic ' : '';
   ctx.font = `${style}${fontSize}px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
   ctx.textAlign = 'center';

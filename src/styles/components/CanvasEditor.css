@@ -4,5 +4,5 @@
   align-items: center;
   gap: var(--space-lg);
   width: 100%;
-  max-width: 800px;
+  max-width: 560px;
 }

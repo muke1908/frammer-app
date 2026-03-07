@@ -13,9 +13,10 @@ function drawCaption(ctx, captionConfig, fit, canvasWidth) {
   const text = captionConfig.text.trim();
   if (!text) return;
 
-  // Scale font size from reference 1920px to actual canvas width
-  const scaledSize = captionConfig.size * (canvasWidth / 1920);
-  const fontSize = Math.max(8, Math.round(scaledSize));
+  // Scale font size: size values (12-18) are relative units; multiply by 4 so
+  // the caption is actually readable on both the preview and the full-res export.
+  const scaledSize = captionConfig.size * 4 * (canvasWidth / 1920);
+  const fontSize = Math.max(12, Math.round(scaledSize));
   const style = captionConfig.italic ? 'italic ' : '';
   ctx.font = `${style}${fontSize}px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
   ctx.textAlign = 'center';
@@ -60,16 +61,17 @@ export function renderFramedImage(canvas, image, crop, frameConfig, pixelRatio =
   const frameAspectRatio =
     frameConfig.aspectRatio === ASPECT_RATIOS.LANDSCAPE ? 16 / 9 : 9 / 16;
 
-  // Adjust base width for smaller screens
-  const maxWidth = Math.min(window.innerWidth - 64, CANVAS_BASE_WIDTH);
-  const baseWidth = maxWidth;
+  // Use the container's actual layout width so CSS max-width constraints are
+  // respected and the canvas never overflows on desktop.
+  const containerWidth = canvas.parentElement?.clientWidth || 800;
+  const baseWidth = Math.min(containerWidth, CANVAS_BASE_WIDTH);
   const baseHeight = Math.round(baseWidth / frameAspectRatio);
 
   // Scale for retina displays
   canvas.width = baseWidth * pixelRatio;
   canvas.height = baseHeight * pixelRatio;
 
-  // Set CSS dimensions for proper display
+  // Keep CSS dimensions in sync with actual layout width (no overflow)
   canvas.style.width = `${baseWidth}px`;
   canvas.style.height = `${baseHeight}px`;
 
