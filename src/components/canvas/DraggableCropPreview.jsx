@@ -11,19 +11,24 @@ export default function DraggableCropPreview({
   onOffsetChange,
 }) {
   const canvasRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [currentOffset, setCurrentOffset] = useState({ x: 0, y: 0 });
+  // Use refs for all drag state so event handlers always see current values
+  // without depending on React re-render timing.
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });       // client coords at drag start
+  const offsetAtStartRef = useRef({ x: 0, y: 0 });   // cropOffset at drag start
+  const latestOffsetRef = useRef({ x: cropOffset.x, y: cropOffset.y });
 
-  // Calculate crop dimensions
-  const cropDimensions = calculateCrop(imageWidth, imageHeight, cropPreset, 0, 0);
+  const [isDragging, setIsDragging] = useState(false); // for CSS cursor only
+  const [currentOffset, setCurrentOffset] = useState({ x: cropOffset.x, y: cropOffset.y });
 
-  // Update current offset when prop changes
+  // Sync when parent resets the offset (e.g. new crop preset)
   useEffect(() => {
-    setCurrentOffset({ x: cropOffset.x, y: cropOffset.y });
+    const next = { x: cropOffset.x, y: cropOffset.y };
+    latestOffsetRef.current = next;
+    setCurrentOffset(next);
   }, [cropOffset.x, cropOffset.y]);
 
-  // Draw preview
+  // Draw preview whenever offset or image changes
   useEffect(() => {
     if (!canvasRef.current || !image) return;
 
@@ -34,157 +39,115 @@ export default function DraggableCropPreview({
     canvas.width = previewSize;
     canvas.height = previewSize;
 
-    // Clear canvas
     ctx.clearRect(0, 0, previewSize, previewSize);
 
-    // Calculate scale to fit image in preview
     const scale = Math.min(previewSize / imageWidth, previewSize / imageHeight);
-
-    // Draw full image
     const scaledWidth = imageWidth * scale;
     const scaledHeight = imageHeight * scale;
-    const offsetX = (previewSize - scaledWidth) / 2;
-    const offsetY = (previewSize - scaledHeight) / 2;
+    const drawOffsetX = (previewSize - scaledWidth) / 2;
+    const drawOffsetY = (previewSize - scaledHeight) / 2;
 
     ctx.globalAlpha = 0.5;
-    ctx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
-
-    // Draw crop overlay
+    ctx.drawImage(image, drawOffsetX, drawOffsetY, scaledWidth, scaledHeight);
     ctx.globalAlpha = 1;
 
-    // Calculate crop position with offset
-    const finalCrop = calculateCrop(
-      imageWidth,
-      imageHeight,
-      cropPreset,
-      currentOffset.x,
-      currentOffset.y
-    );
-
-    const cropX = offsetX + finalCrop.x * scale;
-    const cropY = offsetY + finalCrop.y * scale;
+    const finalCrop = calculateCrop(imageWidth, imageHeight, cropPreset, currentOffset.x, currentOffset.y);
+    const cropX = drawOffsetX + finalCrop.x * scale;
+    const cropY = drawOffsetY + finalCrop.y * scale;
     const cropW = finalCrop.width * scale;
     const cropH = finalCrop.height * scale;
 
-    // Darken outside crop area
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, previewSize, cropY); // Top
-    ctx.fillRect(0, cropY, cropX, cropH); // Left
-    ctx.fillRect(cropX + cropW, cropY, previewSize - (cropX + cropW), cropH); // Right
-    ctx.fillRect(0, cropY + cropH, previewSize, previewSize - (cropY + cropH)); // Bottom
+    ctx.fillRect(0, 0, previewSize, cropY);
+    ctx.fillRect(0, cropY, cropX, cropH);
+    ctx.fillRect(cropX + cropW, cropY, previewSize - (cropX + cropW), cropH);
+    ctx.fillRect(0, cropY + cropH, previewSize, previewSize - (cropY + cropH));
 
-    // Draw crop frame
     ctx.strokeStyle = '#3B82F6';
     ctx.lineWidth = 2;
     ctx.strokeRect(cropX, cropY, cropW, cropH);
 
-    // Draw corner handles
     const handleSize = 8;
     ctx.fillStyle = '#3B82F6';
-    const corners = [
-      [cropX, cropY],
-      [cropX + cropW, cropY],
-      [cropX, cropY + cropH],
-      [cropX + cropW, cropY + cropH],
-    ];
-    corners.forEach(([x, y]) => {
-      ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
-    });
-  }, [image, imageWidth, imageHeight, cropPreset, currentOffset, cropDimensions]);
+    [[cropX, cropY], [cropX + cropW, cropY], [cropX, cropY + cropH], [cropX + cropW, cropY + cropH]]
+      .forEach(([x, y]) => ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize));
+  }, [image, imageWidth, imageHeight, cropPreset, currentOffset]);
 
-  const handleMouseDown = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || !canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
+  // Convert a client-space delta to image-pixel delta
+  const clientDeltaToImageDelta = (dx, dy) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
     const previewSize = 300;
+    // Account for CSS scaling: canvas may display smaller than its 300×300 internal size
+    const cssToCanvas = previewSize / rect.width;
     const scale = Math.min(previewSize / imageWidth, previewSize / imageHeight);
+    return { x: (dx * cssToCanvas) / scale, y: (dy * cssToCanvas) / scale };
+  };
 
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
+  const startDrag = (clientX, clientY) => {
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: clientX, y: clientY };
+    offsetAtStartRef.current = { ...latestOffsetRef.current };
+    setIsDragging(true);
+  };
 
-    const deltaX = (currentX - dragStart.x) / scale;
-    const deltaY = (currentY - dragStart.y) / scale;
-
-    const newOffset = {
-      x: cropOffset.x + deltaX,
-      y: cropOffset.y + deltaY,
+  const moveDrag = (clientX, clientY) => {
+    if (!isDraggingRef.current) return;
+    const dx = clientX - dragStartRef.current.x;
+    const dy = clientY - dragStartRef.current.y;
+    const imgDelta = clientDeltaToImageDelta(dx, dy);
+    const next = {
+      x: offsetAtStartRef.current.x + imgDelta.x,
+      y: offsetAtStartRef.current.y + imgDelta.y,
     };
-
-    setCurrentOffset(newOffset);
+    latestOffsetRef.current = next;
+    setCurrentOffset(next);
   };
 
-  const handleMouseUp = () => {
-    if (isDragging) {
-      onOffsetChange(currentOffset);
-      setIsDragging(false);
-    }
+  const endDrag = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    onOffsetChange(latestOffsetRef.current);
   };
+
+  // Attach mouse events to document so fast drags that leave the canvas still work
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e) => moveDrag(e.clientX, e.clientY);
+    const onUp = () => endDrag();
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging]);
 
   const handleTouchStart = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
-    setIsDragging(true);
-    setDragStart({
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-    });
+    startDrag(touch.clientX, touch.clientY);
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging || !canvasRef.current) return;
     e.preventDefault();
-
-    const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
-    const previewSize = 300;
-    const scale = Math.min(previewSize / imageWidth, previewSize / imageHeight);
-
-    const currentX = touch.clientX - rect.left;
-    const currentY = touch.clientY - rect.top;
-
-    const deltaX = (currentX - dragStart.x) / scale;
-    const deltaY = (currentY - dragStart.y) / scale;
-
-    const newOffset = {
-      x: cropOffset.x + deltaX,
-      y: cropOffset.y + deltaY,
-    };
-
-    setCurrentOffset(newOffset);
+    moveDrag(touch.clientX, touch.clientY);
   };
 
-  const handleTouchEnd = () => {
-    if (isDragging) {
-      onOffsetChange(currentOffset);
-      setIsDragging(false);
-    }
-  };
+  const handleTouchEnd = () => endDrag();
 
-  if (cropPreset === 'none') {
-    return null; // No dragging for "none" preset
-  }
+  if (cropPreset === 'none') return null;
 
   return (
     <div className="draggable-crop-preview">
       <p className="draggable-crop-preview__label">Drag to reposition crop</p>
       <canvas
         ref={canvasRef}
-        className={`draggable-crop-preview__canvas ${
-          isDragging ? 'draggable-crop-preview__canvas--dragging' : ''
-        }`}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className={`draggable-crop-preview__canvas ${isDragging ? 'draggable-crop-preview__canvas--dragging' : ''}`}
+        onMouseDown={(e) => startDrag(e.clientX, e.clientY)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
