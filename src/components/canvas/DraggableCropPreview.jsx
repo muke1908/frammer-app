@@ -11,11 +11,9 @@ export default function DraggableCropPreview({
   onOffsetChange,
 }) {
   const canvasRef = useRef(null);
-  // Use refs for all drag state so event handlers always see current values
-  // without depending on React re-render timing.
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });       // client coords at drag start
-  const offsetAtStartRef = useRef({ x: 0, y: 0 });   // cropOffset at drag start
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const offsetAtStartRef = useRef({ x: 0, y: 0 });
   const latestOffsetRef = useRef({ x: cropOffset.x, y: cropOffset.y });
 
   const [isDragging, setIsDragging] = useState(false); // for CSS cursor only
@@ -73,58 +71,61 @@ export default function DraggableCropPreview({
       .forEach(([x, y]) => ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize));
   }, [image, imageWidth, imageHeight, cropPreset, currentOffset]);
 
-  // Convert a client-space delta to image-pixel delta
-  const clientDeltaToImageDelta = (dx, dy) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const previewSize = 300;
-    // Account for CSS scaling: canvas may display smaller than its 300×300 internal size
-    const cssToCanvas = previewSize / rect.width;
-    const scale = Math.min(previewSize / imageWidth, previewSize / imageHeight);
-    return { x: (dx * cssToCanvas) / scale, y: (dy * cssToCanvas) / scale };
-  };
+  // These refs hold the latest drag implementations — updated on every render
+  // so they always see current props (imageWidth, imageHeight, onOffsetChange).
+  const moveDragFnRef = useRef(null);
+  const endDragFnRef = useRef(null);
 
-  const startDrag = (clientX, clientY) => {
-    isDraggingRef.current = true;
-    dragStartRef.current = { x: clientX, y: clientY };
-    offsetAtStartRef.current = { ...latestOffsetRef.current };
-    setIsDragging(true);
-  };
-
-  const moveDrag = (clientX, clientY) => {
+  moveDragFnRef.current = (clientX, clientY) => {
     if (!isDraggingRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     const dx = clientX - dragStartRef.current.x;
     const dy = clientY - dragStartRef.current.y;
-    const imgDelta = clientDeltaToImageDelta(dx, dy);
+    const rect = canvas.getBoundingClientRect();
+    const previewSize = 300;
+    const cssToCanvas = previewSize / rect.width;
+    const scale = Math.min(previewSize / imageWidth, previewSize / imageHeight);
     const next = {
-      x: offsetAtStartRef.current.x + imgDelta.x,
-      y: offsetAtStartRef.current.y + imgDelta.y,
+      x: offsetAtStartRef.current.x + (dx * cssToCanvas) / scale,
+      y: offsetAtStartRef.current.y + (dy * cssToCanvas) / scale,
     };
     latestOffsetRef.current = next;
     setCurrentOffset(next);
   };
 
-  const endDrag = () => {
+  endDragFnRef.current = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    document.removeEventListener('mousemove', stableMouseMove);
+    document.removeEventListener('mouseup', stableMouseUp);
     setIsDragging(false);
     onOffsetChange(latestOffsetRef.current);
   };
 
-  // Attach mouse events to document so fast drags that leave the canvas still work
+  // Stable wrappers — same function reference for the lifetime of the component.
+  // They delegate to the latest implementation stored in the refs above.
+  const stableMouseMove = useRef((e) => moveDragFnRef.current(e.clientX, e.clientY)).current;
+  const stableMouseUp = useRef(() => endDragFnRef.current()).current;
+
+  // Remove listeners on unmount (guard against component being removed mid-drag)
   useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e) => moveDrag(e.clientX, e.clientY);
-    const onUp = () => endDrag();
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
     return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mousemove', stableMouseMove);
+      document.removeEventListener('mouseup', stableMouseUp);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging]);
+  }, []);
+
+  const startDrag = (clientX, clientY) => {
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: clientX, y: clientY };
+    offsetAtStartRef.current = { ...latestOffsetRef.current };
+    // Add listeners synchronously so no mouse events are missed
+    document.addEventListener('mousemove', stableMouseMove);
+    document.addEventListener('mouseup', stableMouseUp);
+    setIsDragging(true);
+  };
 
   const handleTouchStart = (e) => {
     const touch = e.touches[0];
@@ -134,10 +135,10 @@ export default function DraggableCropPreview({
   const handleTouchMove = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    moveDrag(touch.clientX, touch.clientY);
+    moveDragFnRef.current(touch.clientX, touch.clientY);
   };
 
-  const handleTouchEnd = () => endDrag();
+  const handleTouchEnd = () => endDragFnRef.current();
 
   if (cropPreset === 'none') return null;
 
