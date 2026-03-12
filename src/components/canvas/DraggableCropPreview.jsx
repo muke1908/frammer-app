@@ -117,11 +117,11 @@ export default function DraggableCropPreview({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startDrag = (clientX, clientY) => {
+  const startMouseDrag = (clientX, clientY) => {
     isDraggingRef.current = true;
     dragStartRef.current = { x: clientX, y: clientY };
     offsetAtStartRef.current = { ...latestOffsetRef.current };
-    // Add listeners synchronously so no mouse events are missed
+    // Attach synchronously so no mouse events are missed between mousedown and next paint
     document.addEventListener('mousemove', stableMouseMove);
     document.addEventListener('mouseup', stableMouseUp);
     setIsDragging(true);
@@ -129,11 +129,16 @@ export default function DraggableCropPreview({
 
   const handleTouchStart = (e) => {
     const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY);
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: touch.clientX, y: touch.clientY };
+    offsetAtStartRef.current = { ...latestOffsetRef.current };
+    setIsDragging(true);
+    // No document listeners needed — touchmove always fires on the originating element
   };
 
   const handleTouchMove = (e) => {
-    e.preventDefault();
+    // e.preventDefault() is a no-op here (React passive listeners), but
+    // touch-action: none on the canvas already prevents scroll interference
     const touch = e.touches[0];
     moveDragFnRef.current(touch.clientX, touch.clientY);
   };
@@ -148,7 +153,7 @@ export default function DraggableCropPreview({
       <canvas
         ref={canvasRef}
         className={`draggable-crop-preview__canvas ${isDragging ? 'draggable-crop-preview__canvas--dragging' : ''}`}
-        onMouseDown={(e) => startDrag(e.clientX, e.clientY)}
+        onMouseDown={(e) => startMouseDrag(e.clientX, e.clientY)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
